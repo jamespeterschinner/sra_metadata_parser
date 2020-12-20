@@ -38,3 +38,5 @@ manner. In order to achieve this goal the use of `unsafe` code with pointers of 
 life time to a `Vec<'a, u8>` is used. Currently the implementation checks at runtime that
 the capacity of this vec does not change, which would mean the unsafe pointers are now invalid.
 
+I would like to change this in the future, providing there are not significant performance costs
+
