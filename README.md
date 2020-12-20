@@ -7,7 +7,7 @@ ftp://ftp.ncbi.nlm.nih.gov/sra/reports/Metadata/
 
 There by giving individuals a tool which can ensure they are using the most recent dataset.
 
-The metadata dumps (.tar.gz files) contain millions of directory's each with a set xml files 
+The metadata dumps (.tar.gz files) contain millions of directory's each with a set of xml files 
 that may include:
 
 - *.experiment.xml
