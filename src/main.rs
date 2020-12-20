@@ -228,12 +228,6 @@ impl<'a> Gather for Study<'a> {
     }
 }
 
-enum Parser<'a> {
-    Experiment(FileParser<'a, Experiment<'a>>),
-    Study(FileParser<'a, Study<'a>>),
-    None,
-}
-
 fn main() {
     let opts: Opts = Opts::parse();
     let handle = stdout();
