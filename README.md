@@ -1,4 +1,4 @@
-#sra_metadata_parser
+# sra_metadata_parser
 
 This project aims to create a simple method for researchers to extract the relevant
 data for their needs from the SRA metadata dumps found here: 
