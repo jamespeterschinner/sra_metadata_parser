@@ -1,4 +1,4 @@
-#![feature(read_initializer)]
+
 
 extern crate tar;
 
@@ -38,12 +38,12 @@ trait Gather {
     fn gather_text(&mut self, path: &Vec<&[u8]>, bytes_start: BytesText<'_>);
 }
 
-trait ReAddress {
-    unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8);
-}
+// trait ReAddress {
+//     unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8);
+// }
 
 
-struct FileParser<'a, D: Gather + ReAddress> {
+struct FileParser<'a, D: Gather> {
     buf_depth: i32,
     depth: i32,
     buf: Vec<u8>,
@@ -53,7 +53,7 @@ struct FileParser<'a, D: Gather + ReAddress> {
 }
 
 
-impl<'a, D: Gather + ReAddress> FileParser<'a, D> {
+impl<'a, D: Gather> FileParser<'a, D> {
     fn new(buf_depth: i32, file: BufReader<Entry<'a, GzDecoder<File>>>) -> FileParser<'a, D> {
         let mut reader = Reader::from_reader(file);
         reader.expand_empty_elements(true);
@@ -122,11 +122,11 @@ impl<'a, D: Gather + ReAddress> FileParser<'a, D> {
                 self.path.clear();
             }
 
-            if self.buf.as_ptr() != original_pnt {
-                if let Some(data) = &mut self.data {
-                    unsafe {data.re_address(original_pnt, self.buf.as_ptr())}
-                }
-            }
+            // if self.buf.as_ptr() != original_pnt {
+            //     if let Some(data) = &mut self.data {
+            //         unsafe {data.re_address(original_pnt, self.buf.as_ptr())}
+            //     }
+            // }
         }
         self.data.as_ref()
     }
@@ -180,11 +180,11 @@ struct Study<'a> {
 
 }
 
-impl ReAddress for Experiment{
-    unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8) {
-        unimplemented!()
-    }
-}
+// impl ReAddress for Experiment{
+//     unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8) {
+//         unimplemented!()
+//     }
+// }
 
 const EXPERIMENT: &[u8] = b"EXPERIMENT";
 const STUDY_REF: &[u8] = b"STUDY_REF";
