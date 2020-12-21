@@ -14,7 +14,7 @@ that may include:
 - *.run.xml
 - *.sample.xml
 - *.study.xml
-- *.submission
+- *.submission.xml
 
 The idea is to specify which data is of interest with in each xml file (using an XPath like strategy)
 and the program will generate a .csv file (for now) for each corresponding xml document type 
@@ -23,11 +23,11 @@ has been specified by the user.
 
 ## Usage
 
-    sra_metadata_pipeline --file <file> --destination <destination>
+    sra_metadata_parser --file <file> --destination <destination>
 
 ## Example 
 
-    sra_metadata_pipeline -f NCBI_SRA_Metadata_Full_20201006.tar.gz -d ./
+    sra_metadata_parser -f NCBI_SRA_Metadata_Full_20201006.tar.gz -d ./
     
     
 # Disclaimer 

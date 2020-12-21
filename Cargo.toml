@@ -1,5 +1,5 @@
 [package]
-name = "sra_metadata_pipeline"
+name = "sra_metadata_parser"
 version = "0.1.0"
 authors = ["James Schinner <james.peter.schinner@gmail.com>"]
 edition = "2018"

@@ -1,8 +1,6 @@
 #![feature(read_initializer)]
 
 extern crate tar;
-// #[macro_use]
-// extern crate clap;
 
 use std::fmt::Debug;
 use std::fs::File;
@@ -40,18 +38,22 @@ trait Gather {
     fn gather_text(&mut self, path: &Vec<&[u8]>, bytes_start: BytesText<'_>);
 }
 
+trait ReAddress {
+    unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8);
+}
 
-struct FileParser<'a, D: Gather> {
+
+struct FileParser<'a, D: Gather + ReAddress> {
     buf_depth: i32,
     depth: i32,
     buf: Vec<u8>,
     reader: Reader<BufReader<Entry<'a, GzDecoder<File>>>>,
     path: Vec<&'a [u8]>,
-    data: PhantomData<D>,
+    data: Option<D>,
 }
 
 
-impl<'a, D: Gather> FileParser<'a, D> {
+impl<'a, D: Gather + ReAddress> FileParser<'a, D> {
     fn new(buf_depth: i32, file: BufReader<Entry<'a, GzDecoder<File>>>) -> FileParser<'a, D> {
         let mut reader = Reader::from_reader(file);
         reader.expand_empty_elements(true);
@@ -62,15 +64,12 @@ impl<'a, D: Gather> FileParser<'a, D> {
             buf: Vec::with_capacity(BUF_CAPACITY),
             reader,
             path: vec![],
-            data: PhantomData,
+            data: None,
         }
     }
-}
 
-impl<'a, D: Gather + Debug> Iterator for FileParser<'a, D> {
-    type Item = D;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<&D> {
         assert_eq!(self.buf.capacity(), BUF_CAPACITY,
                    "Read buffer has increased in size from {} to {}. \
                    This means the buffer has been reallocated and pointers \
@@ -79,7 +78,8 @@ impl<'a, D: Gather + Debug> Iterator for FileParser<'a, D> {
         );
         self.buf.clear();
         self.path.clear();
-        let mut data = Self::Item::new();
+        self.data = Some(D::new());
+        let original_pnt = self.buf.as_ptr();
         loop {
             match self.reader.read_event(&mut self.buf) {
                 Ok(Start(bytes_start)) => {
@@ -93,28 +93,42 @@ impl<'a, D: Gather + Debug> Iterator for FileParser<'a, D> {
                                 )
                             )
                         }
-                        data.gather_attr(&self.path, bytes_start);
+                        if let Some(data) = &mut self.data {
+                            data.gather_attr(&self.path, bytes_start);
+                        }
                     }
                 }
                 Ok(Text(bytes_text)) => {
-                    data.gather_text(&self.path, bytes_text);
+                    if let Some(data) = &mut self.data {
+                        data.gather_text(&self.path, bytes_text);
+                    }
                 }
 
                 Ok(End(_)) => {
                     self.depth -= 1;
                     self.path.pop();
                     if self.depth == self.buf_depth - 1 {
-                        break Some(data);
+                        break;
                     }
                 }
-                Ok(Eof) => { break None; }
+                Ok(Eof) => {
+                    self.data = None;
+                    break;
+                }
                 _ => {}
             }
             if self.depth < self.buf_depth {
                 self.buf.clear();
                 self.path.clear();
             }
+
+            if self.buf.as_ptr() != original_pnt {
+                if let Some(data) = &mut self.data {
+                    unsafe {data.re_address(original_pnt, self.buf.as_ptr())}
+                }
+            }
         }
+        self.data.as_ref()
     }
 }
 
@@ -164,6 +178,12 @@ struct Study<'a> {
     title: Option<&'a str>,
     ab: Option<&'a str>,
 
+}
+
+impl ReAddress for Experiment{
+    unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8) {
+        unimplemented!()
+    }
 }
 
 const EXPERIMENT: &[u8] = b"EXPERIMENT";
@@ -221,7 +241,7 @@ impl<'a> Gather for Study<'a> {
             // /STUDY/DESCRIPTOR/STUDY_TITLE
             if *path == [STUDY, DESCRIPTOR, STUDY_TITLE] {
                 self.title = get_text(&bytes_text);
-            } else if *path == [STUDY, DESCRIPTOR,STUDY_ABSTRACT]{
+            } else if *path == [STUDY, DESCRIPTOR, STUDY_ABSTRACT] {
                 self.ab = get_text(&bytes_text);
             }
         }
@@ -235,13 +255,16 @@ fn main() {
     let tar_gz = File::open(opts.file).unwrap();
     let tar = GzDecoder::new(tar_gz);
     let mut a = Archive::new(tar);
-    let mut experiment_writer = Writer::from_path(format!("{}/experiments.csv", opts.destination))
+    let mut experiment_writer = Writer::from_path(
+        format!("{}/experiments.csv", opts.destination)
+    )
         .expect("Unable to create experiments.csv file");
-    let mut study_writer = Writer::from_path(format!("{}/studies.csv", opts.destination))
+    let mut study_writer = Writer::from_path(
+        format!("{}/studies.csv", opts.destination)
+    )
         .expect("Unable to create studies.csv file");
     for res in a.entries().unwrap() {
         let file = res.unwrap();
-        // println!("{:?}", &file.header().path().unwrap());
         let doc_path = &file.header().path().unwrap();
         let doc_str = doc_path.to_str().unwrap();
 
@@ -254,7 +277,7 @@ fn main() {
             experiment_writer.flush();
             Ok(())
         } else if doc_str.contains("study.xml") {
-            let mut buf_reader = BufReader::new( file);
+            let mut buf_reader = BufReader::new(file);
             let mut parser = FileParser::<Study>::new(2, buf_reader);
             while let Some(data) = parser.next() {
                 study_writer.serialize(data);
