@@ -42,7 +42,7 @@ has been specified by the user (with in the compiled program).
 
     cargo build --release    
     
-###### Executable will now be in:
+###### Executable will now be in
 
     ~/sra_metadata_parser/target/release/sra_metadata_pipeline
     
