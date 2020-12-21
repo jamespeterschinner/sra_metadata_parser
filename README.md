@@ -5,7 +5,7 @@ data for their needs from the SRA metadata dumps found here:
 
 ftp://ftp.ncbi.nlm.nih.gov/sra/reports/Metadata/
 
-There by giving individuals a tool which can ensure they are using the most recent dataset.
+Thereby giving individuals a tool which can ensure they are using the most recent dataset.
 
 The metadata dumps (.tar.gz files) contain millions of directory's each with a set of xml files 
 that may include:
@@ -16,10 +16,13 @@ that may include:
 - *.study.xml
 - *.submission.xml
 
-The idea is to specify which data is of interest with in each xml file (using an XPath like strategy)
+The idea is to specify which data is of interest within each xml file (using an XPath like strategy)
 and the program will generate a .csv file (for now) for each corresponding xml document type 
 (experiment.xml, run.xml ...). Each row in the csv file pertains to one group of associated data that
 has been specified by the user (with in the compiled program).
+
+At the time if writing (21/12/2020) this example program parses the entire SRA metadata dump under 15min 
+on a 2.50Ghz i7 processor using ~3mb of RAM under 15min.
 
 ## Usage
 
