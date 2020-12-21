@@ -24,6 +24,13 @@ has been specified by the user (with in the compiled program).
 At the time if writing (21/12/2020) this example program parses the entire SRA metadata dump under 15min 
 on a 2.50Ghz i7 processor using ~3mb of RAM under 15min.
 
+### Aims continued
+
+I intend to develop this project into a SRA metadata dump -> SQL database program. After which 
+I will split of the lower level functionality into another package which will expose an api
+allowing much more customisation and targeted data extraction, this will be beneficial for those
+who only want to extract very specific info, which will vastly speed up data extraction time.
+
 ## Usage
 
     sra_metadata_parser --file <file> --destination <destination>
