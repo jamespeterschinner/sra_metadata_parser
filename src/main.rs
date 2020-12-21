@@ -1,5 +1,3 @@
-
-
 extern crate tar;
 
 use std::fmt::Debug;
@@ -35,7 +33,7 @@ struct Opts {
 trait Gather {
     fn new() -> Self where Self: Sized;
     fn gather_attr(&mut self, path: &Vec<&[u8]>, bytes_start: BytesStart<'_>);
-    fn gather_text(&mut self, path: &Vec<&[u8]>, bytes_start: BytesText<'_>);
+    fn gather_text(&mut self, path: &Vec<&[u8]>, bytes_text: BytesText<'_>);
 }
 
 // trait ReAddress {
@@ -180,11 +178,23 @@ struct Study<'a> {
 
 }
 
-// impl ReAddress for Experiment{
-//     unsafe fn re_address(&mut self, original_pnt: *const u8, new_pnt: *const u8) {
-//         unimplemented!()
-//     }
-// }
+#[derive(Debug, PartialEq)]
+enum SampleAttr {
+    None,
+    InsdcStatus,
+}
+
+#[derive(Debug, Serialize)]
+struct Sample<'a> {
+    #[serde(skip_serializing)]
+    attr_state: SampleAttr,
+
+    srs: Option<&'a str>,
+    species: Option<&'a str>,
+    description: Option<&'a str>,
+    insdc_status: Option<&'a str>,
+}
+
 
 const EXPERIMENT: &[u8] = b"EXPERIMENT";
 const STUDY_REF: &[u8] = b"STUDY_REF";
@@ -248,6 +258,58 @@ impl<'a> Gather for Study<'a> {
     }
 }
 
+const SAMPLE: &[u8] = b"SAMPLE";
+const SAMPLE_NAME: &[u8] = b"SAMPLE_NAME";
+const SCIENTIFIC_NAME: &[u8] = b"SCIENTIFIC_NAME";
+const DESCRIPTION: &[u8] = b"DESCRIPTION";
+const SAMPLE_ATTRIBUTES: &[u8] = b"SAMPLE_ATTRIBUTES";
+const SAMPLE_ATTRIBUTE: &[u8] = b"SAMPLE_ATTRIBUTE";
+const TAG: &[u8] = b"TAG";
+const VALUE: &[u8] = b"VALUE";
+
+impl<'a> Gather for Sample<'a> {
+    fn new() -> Self where Self: Sized {
+        Sample {
+            attr_state: SampleAttr::None,
+            srs: None,
+            species: None,
+            description: None,
+            insdc_status: None,
+        }
+    }
+
+    fn gather_attr(&mut self, path: &Vec<&[u8]>, bytes_start: BytesStart<'_>) {
+        unsafe {
+            if *path == [SAMPLE] {
+                self.srs = get_attribute(&bytes_start, b"accession");
+            }
+        }
+    }
+
+    fn gather_text(&mut self, path: &Vec<&[u8]>, bytes_text: BytesText<'_>) {
+        unsafe {
+            if *path == [SAMPLE, SAMPLE_NAME, SCIENTIFIC_NAME] {
+                self.species = get_text(&bytes_text);
+            } else if *path == [SAMPLE, DESCRIPTION] {
+                // /SAMPLE_SET/SAMPLE[1]/DESCRIPTION
+                self.description = get_text(&bytes_text);
+            } else if *path == [SAMPLE, SAMPLE_ATTRIBUTES, SAMPLE_ATTRIBUTE, TAG] {
+                if let Some(text) = get_text(&bytes_text) {
+                    if text == "INSDC status" {
+                        self.attr_state = SampleAttr::InsdcStatus;
+                    } else {
+                        self.attr_state = SampleAttr::None;
+                    }
+                }
+            } else if *path == [SAMPLE, SAMPLE_ATTRIBUTES, SAMPLE_ATTRIBUTE, VALUE] {
+                if self.attr_state == SampleAttr::InsdcStatus {
+                    self.insdc_status = get_text(&bytes_text)
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     let opts: Opts = Opts::parse();
     let handle = stdout();
@@ -263,6 +325,10 @@ fn main() {
         format!("{}/studies.csv", opts.destination)
     )
         .expect("Unable to create studies.csv file");
+    let mut sample_writer = Writer::from_path(
+        format!("{}/samples.csv", opts.destination)
+    )
+        .expect("Unable to create samples.csv file");
     for res in a.entries().unwrap() {
         let file = res.unwrap();
         let doc_path = &file.header().path().unwrap();
@@ -283,6 +349,14 @@ fn main() {
                 study_writer.serialize(data);
             }
             study_writer.flush();
+            Ok(())
+        } else if doc_str.contains("sample.xml") {
+            let mut buf_reader = BufReader::new(file);
+            let mut parser = FileParser::<Sample>::new(2, buf_reader);
+            while let Some(data) = parser.next() {
+                sample_writer.serialize(data);
+            }
+            sample_writer.flush();
             Ok(())
         } else { Err(()) };
     }
