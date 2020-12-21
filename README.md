@@ -19,7 +19,7 @@ that may include:
 The idea is to specify which data is of interest with in each xml file (using an XPath like strategy)
 and the program will generate a .csv file (for now) for each corresponding xml document type 
 (experiment.xml, run.xml ...). Each row in the csv file pertains to one group of associated data that
-has been specified by the user.
+has been specified by the user (with in the compiled program).
 
 ## Usage
 
