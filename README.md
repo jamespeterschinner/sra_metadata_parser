@@ -30,6 +30,22 @@ has been specified by the user.
     sra_metadata_parser -f NCBI_SRA_Metadata_Full_20201006.tar.gz -d ./
     
     
+# Building
+
+###### Install Rust: https://www.rust-lang.org/tools/install
+
+###### Clone this repo
+
+    git clone https://github.com/jamespeterschinner/sra_metadata_parser
+    
+###### Build
+
+    cargo build --release    
+    
+###### Executable will now be in:
+
+    ~/sra_metadata_parser/target/release/sra_metadata_pipeline
+    
 # Disclaimer 
 
 This project is currently 'good enough' code, which in part is a proof of concept
